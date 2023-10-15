@@ -117,7 +117,7 @@
 ;; brackets, numbers, backslash, equal sign, hash sign, and percent sign.
 ;; Anything else can just put up with not highlighting properly.
 (defvar re-string-end-macro        "\\(?:[][:space:]#=%[:digit:].,[{}\\\\]\\)")
-(defvar re-string-l3-chars         "\\(?:[a-zA-Z_]+\\)")
+(defvar re-string-l3-chars         "\\(?:[@a-zA-Z_]+\\)")
 (defvar re-string-l3-func-arg-spec "\\(?:[cefFnNopTvVwx]*\\)")
 ;; TODO consider removing wx (also f?) from above, and adding
 ;; it to a new var, re-string-l3-func-arg-deprecated (or special, or
