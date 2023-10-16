@@ -1,6 +1,6 @@
 # Contributions
 
-This file (CONTRIBUTIONS), being a list of facts is not
+This file (CONTRIBUTIONS.md), being a list of facts is not
 copyrightable. If this is incorrect in any particular, this file is
 expressly placed in the Public Domain, and no copyright is claimed.
 
