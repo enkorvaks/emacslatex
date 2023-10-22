@@ -8,7 +8,7 @@
 ;;  https://superuser.com/q/485363
 
 (require 'tex-mode)
-(defface font-lock-latex3-kernel-face
+(defface font-latex-expl3-kernel-face
   '((t :inherit font-lock-keyword-face))
   "Face for LaTeX3 kernel functions"
   :group 'tex
@@ -16,70 +16,70 @@
 )
 
 ; TODO contemplate what this face should inherit from...
-(defface font-lock-latex-arg-face
+(defface font-latex-arg-face
   '((t :inherit font-lock-function-name-face))
     "Face for LaTeX macro arguments"
     :group 'tex
     :group 'font-lock-faces
 )
 
-(defface font-lock-latex3-arg-spec-face
+(defface font-latex-expl3-arg-spec-face
   '((t :inherit font-lock-constant-face))
   "Face for LaTeX3 argument specifications"
   :group 'tex
   :group 'font-lock-faces
 )
 
-(defface font-lock-latex-builtin-face
+(defface font-latex-builtin-face
   '((t :inherit font-lock-builtin-face))
   "Face for LaTeX builtins and basic commands"
   :group 'tex
   :group 'font-lock-faces
 )
 
-(defface font-lock-latex3-variable-name-face
+(defface font-latex-expl3-variable-name-face
   '((t :inherit font-lock-variable-name-face))
   "Face for LaTeX3 variables (public)"
   :group 'tex
   :group 'font-lock-faces
   )
 
-(defface font-lock-latex3-private-variable-name-face
+(defface font-latex-expl3-private-variable-name-face
   '((t :inherit font-lock-variable-name-face))
   "Face for LaTeX3 variables (private)"
   :group 'tex
   :group 'font-lock-faces
 )
 
-(defface font-lock-latex3-function-name-face
+(defface font-latex-expl3-function-name-face
   '((t :inherit font-lock-function-name-face))
   "Face for LaTeX3 functions (non-kernel)"
   :group 'tex
   :group 'font-lock-faces
 )
 
-(defface font-lock-latex3-private-function-name-face
+(defface font-latex-expl3-private-function-name-face
   '((t :inherit font-lock-function-name-face))
   "Face for LaTeX3 functions (private)"
   :group 'tex
   :group 'font-lock-faces
 )
 
-(defface font-lock-latex2e-function-name-face
+(defface font-latex-latex2e-function-name-face
   '((t :inherit font-lock-function-name-face))
   "Face for LaTeX2e functions (public)"
   :group 'tex
   :group 'font-lock-faces
 )
 
-(defface font-lock-latex2e-private-function-name-face
+(defface font-latex-latex2e-private-function-name-face
   '((t :inherit font-lock-function-name-face))
   "Face for LaTeX2e functions (private)"
   :group 'tex
   :group 'font-lock-faces
 )
 
-(defface font-lock-latex-environment-name-face
+(defface font-latex-environment-name-face
   '((t :inherit font-lock-type-face))
   "Face for environment names in LaTeX documents, class files, and style files"
   :group 'tex
@@ -92,21 +92,22 @@
 
 ;; TODO create a WARNING type face (for deprecated or discouraged commands)?
 ;; TODO for LaTeX-Doc mode, use that face for 'stuff that doc authors
+;; (only create if AucTeX is not in use, otherwise, use the AucTeX version)
 ;; possibly should not be use' like \\, \par, \clearpage, \vskip
 ;; (this same face can be used for the deprecated/discouraged arg-specs as well)
 
-(defvar latex3-arg-spec         'font-lock-latex3-arg-spec-face)
-(defvar latex3-function         'font-lock-latex3-function-name-face)
-(defvar latex3-private-function 'font-lock-latex3-private-function-name-face)
-(defvar latex3-kernel           'font-lock-latex3-kernel-face)
-(defvar latex3-variable         'font-lock-latex3-variable-name-face)
-(defvar latex3-private-variable 'font-lock-latex3-private-variable-name-face)
-(defvar latex2-function         'font-lock-latex2e-function-name-face)
-(defvar latex2-private-function 'font-lock-latex2e-private-function-name-face)
-(defvar latex-arg               'font-lock-latex-arg-face)
-(defvar latex-builtin           'font-lock-latex-builtin-face)
-;; TODO latex doc faces go here
-(defvar latex-env               'font-lock-latex-environment-name-face)
+(defvar latex3-arg-spec         'font-latex-expl3-arg-spec-face)
+(defvar latex3-function         'font-latex-expl3-function-name-face)
+(defvar latex3-private-function 'font-latex-expl3-private-function-name-face)
+(defvar latex3-kernel           'font-latex-expl3-kernel-face)
+(defvar latex3-variable         'font-latex-expl3-variable-name-face)
+(defvar latex3-private-variable 'font-latex-expl3-private-variable-name-face)
+(defvar latex2-function         'font-latex-latex2e-function-name-face)
+(defvar latex2-private-function 'font-latex-latex2e-private-function-name-face)
+(defvar latex-arg               'font-latex-arg-face)
+(defvar latex-builtin           'font-latex-builtin-face)
+;; TODO other latex doc faces go here
+(defvar latex-env               'font-latex-environment-name-face)
 
 (defvar re-string-backslash        "\\\\")
 (defvar re-string-l2-public        "\\(?:[a-zA-Z]+[*]?\\)")
@@ -391,9 +392,10 @@
   "Extra keywords to highlight in LaTeX .sty and .cls files (LaTeX Style mode)."
   )
 
-;; In order that using "tex-file" doesn't attempt to compile style and
-;; class files, Emacs can add 'advice' to the function so it won't run
-;; when LaTeX-Style mode is active
+;; In order that using "tex-file" (standard latex-mode, not auctex
+;; LaTeX-mode) doesn't attempt to compile style and class files, Emacs
+;; can add advise to the function so it won't run when LaTeX-Style mode
+;; is active
 (defun latex-style-mode-compile-advice (&optional rest)
     "Disable tex-file command when in LaTeX-Style mode"
   (prog1
@@ -404,6 +406,7 @@
     )
   )
 
+;; TODO add auctex guards here as well
 (advice-add 'tex-file :before-until #'latex-style-mode-compile-advice)
 
 (defconst latex-doc-font-lock-keywords
