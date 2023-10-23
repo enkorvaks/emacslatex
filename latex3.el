@@ -1,13 +1,83 @@
-;; This file released under GPL v3
+;;; latex3.el --- Provide syntax highlighting for LaTeX3 (expl3) -*- lexical-binding: t; -*-
 
+;; Copyright (C) enkorvaks (github username)
+
+
+;; Author: En Korvaks
+;; Version: 0.1
+;; Keywords: languages, faces, tex
+;; URL: https://github.com/enkorvaks/emacslatex
+
+;;; This file is not part of GNU Emacs.
+
+;; This package is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 3, or (at your option)
+;; any later version.
+
+;; This package is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs; see the file COPYING.  If not, write to the
+;; Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
+;; Boston, MA 02110-1301, USA.
+
+;;; Commentary:
+
+;; This package provides latex-sty-mode, a mode for highlighting LaTeX
+;; class and style files, particularly those using expl3 code.
+;;
+;; To activate this mode, type M-x latex-sty-mode
+;;
+;; To use this mode for all LaTeX style and class files, add the
+;; following to your startup file (~/.emacs or ~/.emacs.d/init.el):
+;; (require 'latex3)
+;; (setq auto-mode-alist
+;;      (append '(("\\.sty$" . latex-sty-mode)
+;;                ("\\.cls$" . latex-sty-mode))
+;;                )
+;;              auto-mode-alist)
+;;      )
+;;
 ;; The creation of this file was inspired by Andrew Stacy's post here:
 ;;  https://tex.stackexchange.com/a/129521/244233
 ;; with ideas from the various answers here:
 ;;  https://stackoverflow.com/q/18621036/20781718
 ;; and additional thoughts and ideas from here:
 ;;  https://superuser.com/q/485363
+;; Detection of AUCTeX from here:
+;;  https://emacs.stackexchange.com/q/20995
+
+;;; Code:
 
 (require 'tex-mode)
+
+(if (require 'tex-site nil t)
+    (latex3-auctex-customisations)
+  (latex3-tex-mode-customisations))
+
+(defun latex3-auctex-customisations
+    "Things which need to be done only if AUCTeX is loaded"
+  ;; TODO add advice to stop compiling class and styles
+  )
+
+(defun latex3-tex-mode-customisations
+    "Things which need to be done only if AUCTeX is NOT loaded"
+
+  (defface font-latex-warning-face
+    '((t :inherit font-lock-warning-face))
+    "Face for important keywords"
+    :group 'tex
+    :group 'font-lock-faces
+    )
+  
+  )
+
+;; TODO groups - latex3-fonts (top level), subgroups?
+
 (defface font-latex-expl3-kernel-face
   '((t :inherit font-lock-keyword-face))
   "Face for LaTeX3 kernel functions"
@@ -90,9 +160,7 @@
 ;; TODO create a key/value face (\something[key=value,keynext=otherval]{}) (or a keyface/valueface?)
 
 
-;; TODO create a WARNING type face (for deprecated or discouraged commands)?
-;; TODO for LaTeX-Doc mode, use that face for 'stuff that doc authors
-;; (only create if AucTeX is not in use, otherwise, use the AucTeX version)
+;; TODO for LaTeX-Doc mode, use warning face for 'stuff that doc authors
 ;; possibly should not be use' like \\, \par, \clearpage, \vskip
 ;; (this same face can be used for the deprecated/discouraged arg-specs as well)
 
@@ -123,7 +191,7 @@
 ;; TODO consider removing wx (also f?) from above, and adding
 ;; it to a new var, re-string-l3-func-arg-deprecated (or special, or
 ;; something like that)
-;; make the face derived from WARNING (so it shows up obviously)
+;; use font-latex-warning-face for that
 (defvar re-string-l3-variable      "\\(?:\\(?:l\\|g\\|c\\)_[a-zA-Z_]+\\)")
 (defvar re-string-l3-private-var   "\\(?:\\(?:l\\|g\\|c\\)__[a-zA-Z_]+\\)")
 
@@ -465,6 +533,7 @@
          (parse-sexp-lookup-properties . t)))
 )
 
+;;;###autoload
 (define-derived-mode latex-sty-mode latex-mode "LaTeX Style"
   "Major mode to edit LaTeX class and style files (with syntax highlighting for LaTeX3)."
   (set (make-local-variable 'font-lock-defaults)
@@ -482,3 +551,5 @@
  )
 
 (provide 'latex3)
+
+;;; latex3.el ends here
