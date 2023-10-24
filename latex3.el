@@ -55,16 +55,19 @@
 
 (require 'tex-mode)
 
-(if (require 'tex-site nil t)
-    (latex3-auctex-customisations)
-  (latex3-tex-mode-customisations))
+;; TODO groups - latex3-fonts (top level), subgroups?
 
-(defun latex3-auctex-customisations
+
+(defun latex3-auctex-customisations ()
     "Things which need to be done only if AUCTeX is loaded"
-  ;; TODO add advice to stop compiling class and styles
-  )
+    (advice-add 'TeX-command-master :before-until #'latex-style-mode-compile-advice)
+    (advice-add 'TeX-command-region :before-until #'latex-style-mode-compile-advice)
+    (advice-add 'TeX-command-buffer :before-until #'latex-style-mode-compile-advice)
+    (advice-add 'TeX-command-section :before-until #'latex-style-mode-compile-advice)
+    (advice-add 'TeX-command-run-all :before-until #'latex-style-mode-compile-advice)
+    )
 
-(defun latex3-tex-mode-customisations
+(defun latex3-tex-mode-customisations ()
     "Things which need to be done only if AUCTeX is NOT loaded"
 
   (defface font-latex-warning-face
@@ -76,8 +79,13 @@
   
   )
 
-;; TODO groups - latex3-fonts (top level), subgroups?
+;; Make any changes required early, choosing method based on if AUCTeX
+;; is present or not
+(if (require 'tex-site nil t)
+    (latex3-auctex-customisations)
+  (latex3-tex-mode-customisations))
 
+;; Create new faces
 (defface font-latex-expl3-kernel-face
   '((t :inherit font-lock-keyword-face))
   "Face for LaTeX3 kernel functions"
@@ -85,7 +93,6 @@
   :group 'font-lock-faces
 )
 
-; TODO contemplate what this face should inherit from...
 (defface font-latex-arg-face
   '((t :inherit font-lock-function-name-face))
     "Face for LaTeX macro arguments"
@@ -460,10 +467,9 @@
   "Extra keywords to highlight in LaTeX .sty and .cls files (LaTeX Style mode)."
   )
 
-;; In order that using "tex-file" (standard latex-mode, not auctex
-;; LaTeX-mode) doesn't attempt to compile style and class files, Emacs
-;; can add advise to the function so it won't run when LaTeX-Style mode
-;; is active
+;; In order that compiling a file doesn't attempt to compile style and
+;; class files, Emacs can add advise to the function so it won't run
+;; when LaTeX-Style mode is active
 (defun latex-style-mode-compile-advice (&optional rest)
     "Disable tex-file command when in LaTeX-Style mode"
   (prog1
@@ -474,8 +480,11 @@
     )
   )
 
-;; TODO add auctex guards here as well
 (advice-add 'tex-file :before-until #'latex-style-mode-compile-advice)
+(advice-add 'tex-buffer :before-until #'latex-style-mode-compile-advice)
+(advice-add 'tex-region :before-until #'latex-style-mode-compile-advice)
+(advice-add 'tex-compile :before-until #'latex-style-mode-compile-advice)
+;; AUCTeX compile methods are advised earlier in this file
 
 (defconst latex-doc-font-lock-keywords
   (eval-when-compile
