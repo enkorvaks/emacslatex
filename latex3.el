@@ -190,13 +190,16 @@
   "Set the argument specifiers which will show up as 'Warning'"
   (prog1
       (set optionname newvalue)
-    (setq normal-argspec
-          (replace-regexp-in-string
-           (concat "\\([" newvalue "]\\)")
-           ""
-           all-argspec))
+    (let ((case-fold-search nil))
+      (setq normal-argspec
+            (replace-regexp-in-string
+             (concat "\\([" newvalue "]\\)")
+             ""
+             all-argspec t))
+      )
     )
   )
+
 
 (defcustom argspecwarn "Dwx"
   "Set of characters which, when used in an arg-spec, should be
@@ -206,8 +209,11 @@ specifier. Note that this will only change highlighting if 'Save
 for Future Sessions' is selected, and emacs is restarted. This is
 due to the use of 'eval-when-compile' on the font-lock keywords.
 
-As a result, this value cannot be set (meaningfully) outside of
-the Customize mechanism"
+As a result, the only way this variable can be (meaningfully) set
+outside of the Customize mechanism is by putting something like
+'(defvar argspecwarn \"Dw\")' before loading 'latex3.el' in your
+initialisation file"
+  
   :type '(string)
   :tag "Warning-coloured Argument Specifiers"
   :group 'LaTeX3
@@ -420,7 +426,10 @@ the Customize mechanism"
     (re-search-forward
      (concat 
       "\\(" re-string-backslash re-string-l3-kernel "_" re-string-l3-chars ":" "\\)"
-      "\\(" re-string-l3-func-arg-spec "\\)";; TODO mod this one (like l3function and l3privatefunction) with a customise option
+      "\\(" re-string-l3-warn-arg-spec "\\)?"
+      ;; this appears to work with the same warnings, because the
+      ;; argspec is not overridden from the and private methods. I
+      ;; think. But it does work.
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
