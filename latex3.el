@@ -56,6 +56,14 @@
 (require 'tex-mode)
 
 ;; TODO groups - latex3-fonts (top level), subgroups?
+(defgroup LaTeX3 nil
+  "Top-level group for all customisations for the modes provided by latex3.el"
+  )
+
+(defgroup LaTeX3-font-lock nil
+  "Font lock faces introduced by latex3.el"
+  :group 'LaTeX3
+  )
 
 
 (defun latex3-auctex-customisations ()
@@ -68,13 +76,14 @@
     )
 
 (defun latex3-tex-mode-customisations ()
-    "Things which need to be done only if AUCTeX is NOT loaded"
-
+  "Things which need to be done only if AUCTeX is NOT loaded"
+  
   (defface font-latex-warning-face
     '((t :inherit font-lock-warning-face))
     "Face for important keywords"
     :group 'tex
     :group 'font-lock-faces
+    :group 'LaTeX3-font-lock
     )
   
   )
@@ -91,34 +100,39 @@
   "Face for LaTeX3 kernel functions"
   :group 'tex
   :group 'font-lock-faces
-)
+  :group 'LaTeX3-font-lock
+  )
 
 (defface font-latex-arg-face
   '((t :inherit font-lock-function-name-face))
-    "Face for LaTeX macro arguments"
-    :group 'tex
-    :group 'font-lock-faces
-)
+  "Face for LaTeX macro arguments"
+  :group 'tex
+  :group 'font-lock-faces
+  :group 'LaTeX3-font-lock
+  )
 
 (defface font-latex-expl3-arg-spec-face
   '((t :inherit font-lock-constant-face))
   "Face for LaTeX3 argument specifications"
   :group 'tex
   :group 'font-lock-faces
-)
+  :group 'LaTeX3-font-lock
+  )
 
 (defface font-latex-builtin-face
   '((t :inherit font-lock-builtin-face))
   "Face for LaTeX builtins and basic commands"
   :group 'tex
   :group 'font-lock-faces
-)
+  :group 'LaTeX3-font-lock
+  )
 
 (defface font-latex-expl3-variable-name-face
   '((t :inherit font-lock-variable-name-face))
   "Face for LaTeX3 variables (public)"
   :group 'tex
   :group 'font-lock-faces
+  :group 'LaTeX3-font-lock
   )
 
 (defface font-latex-expl3-private-variable-name-face
@@ -126,42 +140,80 @@
   "Face for LaTeX3 variables (private)"
   :group 'tex
   :group 'font-lock-faces
-)
+  :group 'LaTeX3-font-lock
+  )
 
 (defface font-latex-expl3-function-name-face
   '((t :inherit font-lock-function-name-face))
   "Face for LaTeX3 functions (non-kernel)"
   :group 'tex
   :group 'font-lock-faces
-)
+  :group 'LaTeX3-font-lock
+  )
 
 (defface font-latex-expl3-private-function-name-face
   '((t :inherit font-lock-function-name-face))
   "Face for LaTeX3 functions (private)"
   :group 'tex
   :group 'font-lock-faces
-)
+  :group 'LaTeX3-font-lock
+  )
 
 (defface font-latex-latex2e-function-name-face
   '((t :inherit font-lock-function-name-face))
   "Face for LaTeX2e functions (public)"
   :group 'tex
   :group 'font-lock-faces
-)
+  :group 'LaTeX3-font-lock
+  )
 
 (defface font-latex-latex2e-private-function-name-face
   '((t :inherit font-lock-function-name-face))
   "Face for LaTeX2e functions (private)"
   :group 'tex
   :group 'font-lock-faces
-)
+  :group 'LaTeX3-font-lock
+  )
 
 (defface font-latex-environment-name-face
   '((t :inherit font-lock-type-face))
   "Face for environment names in LaTeX documents, class files, and style files"
   :group 'tex
   :group 'font-lock-faces
-)
+  :group 'LaTeX3-font-lock
+  )
+
+(defvar all-argspec "cDefFnNopTvVwx")
+(defvar normal-argspec "")
+
+(defun set-argspec-warn (optionname newvalue)
+  "Set the argument specifiers which will show up as 'Warning'"
+  (prog1
+      (set optionname newvalue)
+    (setq normal-argspec
+          (replace-regexp-in-string
+           (concat "\\([" newvalue "]\\)")
+           ""
+           all-argspec))
+    )
+  )
+
+(defcustom argspecwarn "Dwx"
+  "Set of characters which, when used in an arg-spec, should be
+highlighted. Sensible choices would contain at the very least 'D'
+and 'w', but may contain anything which is generally an argument
+specifier. Note that this will only change highlighting if 'Save
+for Future Sessions' is selected, and emacs is restarted. This is
+due to the use of 'eval-when-compile' on the font-lock keywords.
+
+As a result, this value cannot be set (meaningfully) outside of
+the Customize mechanism"
+  :type '(string)
+  :tag "Warning-coloured Argument Specifiers"
+  :group 'LaTeX3
+  :set 'set-argspec-warn
+  )
+
 
 ;; TODO create a Title face (\??section*{facegoeshere}, \part{facegoeshere},\chapter{facegoeshere}, \paragraph{}, \subparagraph{},\appendix{})
 ;; TODO create a key/value face (\something[key=value,keynext=otherval]{}) (or a keyface/valueface?)
@@ -183,6 +235,7 @@
 (defvar latex-builtin           'font-latex-builtin-face)
 ;; TODO other latex doc faces go here
 (defvar latex-env               'font-latex-environment-name-face)
+(defvar latex-warn              'font-latex-warning-face)
 
 (defvar re-string-backslash        "\\\\")
 (defvar re-string-l2-public        "\\(?:[a-zA-Z]+[*]?\\)")
@@ -194,7 +247,8 @@
 ;; Anything else can just put up with not highlighting properly.
 (defvar re-string-end-macro        "\\(?:[][:space:]#=%[:digit:].,[{}\\\\]\\)")
 (defvar re-string-l3-chars         "\\(?:[@a-zA-Z_]+\\)")
-(defvar re-string-l3-func-arg-spec "\\(?:[cefFnNopTvVwx]*\\)")
+(defvar re-string-l3-warn-arg-spec (concat "\\(?:[" all-argspec "]+\\)"))
+(defvar re-string-l3-func-arg-spec (concat "\\(?:[" normal-argspec "]+\\)"))
 ;; TODO consider removing wx (also f?) from above, and adding
 ;; it to a new var, re-string-l3-func-arg-deprecated (or special, or
 ;; something like that)
@@ -339,7 +393,7 @@
     (re-search-forward
      (concat 
       "\\(" re-string-backslash re-string-l3-chars "_" re-string-l3-chars ":" "\\)"
-      "\\(" re-string-l3-func-arg-spec "\\)"
+      "\\(?:\\(" re-string-l3-func-arg-spec "\\)\\|\\(" re-string-l3-warn-arg-spec "\\)\\)?"
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
@@ -352,7 +406,7 @@
     (re-search-forward
      (concat
       "\\(" re-string-backslash "__" re-string-l3-chars ":" "\\)"
-      "\\(" re-string-l3-func-arg-spec "\\)"
+      "\\(?:\\(" re-string-l3-func-arg-spec "\\)\\|\\(" re-string-l3-warn-arg-spec "\\)\\)?"
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
@@ -366,7 +420,7 @@
     (re-search-forward
      (concat 
       "\\(" re-string-backslash re-string-l3-kernel "_" re-string-l3-chars ":" "\\)"
-      "\\(" re-string-l3-func-arg-spec "\\)"
+      "\\(" re-string-l3-func-arg-spec "\\)";; TODO mod this one (like l3function and l3privatefunction) with a customise option
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
@@ -411,7 +465,8 @@
        ;; L3 private functions and private variables
        (list 'l3-private-function-font-lock-search
              (list 1 'latex3-private-function )
-	     (list 2 'latex3-arg-spec))
+	     (list 2 'latex3-arg-spec nil t)
+             (list 3 'latex-warn nil t))
        (list 'l3-private-variable-font-lock-search
              1 'latex3-private-variable)
        
@@ -427,7 +482,8 @@
        ; L3 functions (any L3 which is not a kernel function)
        (list 'l3-function-font-lock-search
 	     (list 1 'latex3-function )
-	     (list 2 'latex3-arg-spec))
+	     (list 2 'latex3-arg-spec nil t)
+             (list 3 'latex-warn nil t))
 
        ; Numbered macro arguments
        (list numbered-args

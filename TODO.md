@@ -5,7 +5,6 @@ completed. In no particular order:
 - DocTex mode (for LaTeX3 style packages)
 - Use Warning face when the arg-spec of a function uses discouraged values
 - More on syntax highlighting for Document mode (ordinary `.tex` files)
-- More guards against running TeX/LaTeX/etc against class and style files (when `AUCTeX` is present)
 - Create title faces (when `AUCTeX` not present)
 - Update/change the 'built-in' commands
 - other things to be added as they are found
