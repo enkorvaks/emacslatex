@@ -65,6 +65,14 @@
   :group 'LaTeX3
   )
 
+(defvar LaTeX3-base-mode "base-tex"
+  "A variable used internally by latex3.el to make it easier to
+  set things differently when AUCTeX is present, rather than the
+  default Emacs TeX-Mode.
+
+  Users should not set this value manually. If it is changed,
+  some things may fail to work correctly (or at all).
+")
 
 (defun latex3-auctex-customisations ()
     "Things which need to be done only if AUCTeX is loaded"
@@ -73,6 +81,7 @@
     (advice-add 'TeX-command-buffer :before-until #'latex-style-mode-compile-advice)
     (advice-add 'TeX-command-section :before-until #'latex-style-mode-compile-advice)
     (advice-add 'TeX-command-run-all :before-until #'latex-style-mode-compile-advice)
+    (setq LaTeX3-base-mode "AUCTeX")
     )
 
 (defun latex3-tex-mode-customisations ()
@@ -246,19 +255,16 @@ initialisation file"
 (defvar re-string-backslash        "\\\\")
 (defvar re-string-l2-public        "\\(?:[a-zA-Z]+[*]?\\)")
 (defvar re-string-l2-private       "\\(?:[a-zA-Z@]+[*]?\\)")
-;; end-macro is basically 'space, punctuation, digit' - It should be anything
-;; which is not catcode 11. Due to the annoyance of regular expressions, it is
-;; currently limited to spaces, curly braces, square
-;; brackets, numbers, backslash, equal sign, hash sign, and percent sign.
+
+;; end-macro is basically 'space, punctuation, digit' - It should be
+;; anything which is not catcode 11.
+;; Due to the annoyance of regular expressions, it is currently
+;; limited to what emacs considers puncuation, spaces, and numbers.
 ;; Anything else can just put up with not highlighting properly.
-(defvar re-string-end-macro        "\\(?:[][:space:]#=%[:digit:].,[{}\\\\]\\)")
+(defvar re-string-end-macro        "\\(?:[[:punct:][:space:][:digit:]]\\)")
 (defvar re-string-l3-chars         "\\(?:[@a-zA-Z_]+\\)")
 (defvar re-string-l3-warn-arg-spec (concat "\\(?:[" all-argspec "]+\\)"))
 (defvar re-string-l3-func-arg-spec (concat "\\(?:[" normal-argspec "]+\\)"))
-;; TODO consider removing wx (also f?) from above, and adding
-;; it to a new var, re-string-l3-func-arg-deprecated (or special, or
-;; something like that)
-;; use font-latex-warning-face for that
 (defvar re-string-l3-variable      "\\(?:\\(?:l\\|g\\|c\\)_[a-zA-Z_]+\\)")
 (defvar re-string-l3-private-var   "\\(?:\\(?:l\\|g\\|c\\)__[a-zA-Z_]+\\)")
 
@@ -574,8 +580,8 @@ initialisation file"
 		      (regexp-opt '("''" "\">" "\"'" ">>" "»") t))
 	      'font-lock-string-face)
        ;;  titles  (new latex-doc-face)
-       ;;  warnings (needs new face)
-       ;;  environments (new latex-doc-face)
+       ;;  warnings (uses 'font-latex-warning-face)
+       ;;  environments (uses 'font-latex-environment-name-face)
        (list 'latex-env-font-lock-search
              2 'latex-env)
        ;;  bold/italic/tt/subscript/superscript/... (as per latex-mode)
@@ -588,10 +594,10 @@ initialisation file"
 
 ;; redo some of the latex font lock stuff, but with the faces above,
 ;; rather than the default built-in faces
-
-; make something new (not tex-font-lock-keywords - that has the wrong faces)
-(define-derived-mode latex-doc-mode latex-mode "LaTeX Doc"
-  "Major mode to edit LaTeX document file (with syntax highlighting)"
+;;;###autoload
+(defun latex-doc-font-setup ()
+  "Set up font lock for LaTeX Doc mode"
+  ;; TODO confirm the use and correctness of the variables below
   (set (make-local-variable 'font-lock-defaults)
        '((latex-doc-font-lock-keywords)
          ;; strings, titles, warnings, environments, bold/italic/tt/... ,
@@ -602,14 +608,22 @@ initialisation file"
           . tex-font-lock-syntactic-face-function)
          (font-lock-unfontify-region-function
           . tex-font-lock-unfontify-region)
-         (font-lock-syntactic-keywords
-          . tex-font-lock-syntactic-keywords)
+;         (font-lock-syntactic-keywords
+;          . tex-font-lock-syntactic-keywords)
          (parse-sexp-lookup-properties . t)))
+  )
+
+; make something new (not tex-font-lock-keywords - that has the wrong faces)
+(define-derived-mode latex-doc-mode latex-mode "LaTeX Doc"
+  "Major mode to edit LaTeX document file (with syntax highlighting)"
+  (latex-doc-font-setup)
 )
 
+
 ;;;###autoload
-(define-derived-mode latex-sty-mode latex-mode "LaTeX Style"
-  "Major mode to edit LaTeX class and style files (with syntax highlighting for LaTeX3)."
+(defun latex-sty-font-setup ()
+  "Set up font lock for LaTeX Sty mode"
+  ;; TODO confirm the use and correctness of the variables below
   (set (make-local-variable 'font-lock-defaults)
        '((latex-sty-font-lock-keywords)
          nil nil ((?$ . "\"")) nil
@@ -619,10 +633,29 @@ initialisation file"
           . tex-font-lock-syntactic-face-function)
          (font-lock-unfontify-region-function
           . tex-font-lock-unfontify-region)
-         (font-lock-syntactic-keywords
-          . tex-font-lock-syntactic-keywords)
+;         (font-lock-syntactic-keywords
+;          . tex-font-lock-syntactic-keywords)
          (parse-sexp-lookup-properties . t)))
  )
+
+;;;###autoload
+(define-derived-mode latex-sty-mode latex-mode "LaTeX Style"
+  "Major mode to edit LaTeX class and style files (with syntax highlighting for LaTeX3)."
+  (latex-sty-font-setup)
+  )
+
+;;;###autoload
+(defun latex-doctex3-font-setup ()
+  ;; Possibly do something similar to AUCTeX's font-latex-setup,
+  ;; except use the style-mode colouring from here...
+
+  )
+
+;;;###autoload
+(define-derived-mode latex-doctex3-mode latex-mode "LaTeX Style"
+  "Major mode to edit LaTeX class and style files (with syntax highlighting for LaTeX3)."
+  (latex-doctex3-font-setup)
+  )
 
 (provide 'latex3)
 
