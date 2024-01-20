@@ -254,7 +254,7 @@ initialisation file"
 
 (defvar re-string-backslash        "\\\\")
 (defvar re-string-l2-public        "\\(?:[a-zA-Z]+[*]?\\)")
-(defvar re-string-l2-private       "\\(?:[a-zA-Z@]+[*]?\\)")
+(defvar re-string-l2-private       "\\(?:\\(?:[a-zA-Z]*@+[a-zA-Z]*\\)+[*]?\\)")
 
 ;; end-macro is basically 'space, punctuation, digit' - It should be
 ;; anything which is not catcode 11.
@@ -473,9 +473,6 @@ initialisation file"
 	 )
       (list
        (list (concat"\\(" re-string-backslash re-string-builtin-commands "\\)") 1 'latex-builtin)
-       ;; L2 public functions (no @ symbol)
-       (list 'l2-public-font-lock-search
-	     1 'latex2-function)
 
        ;; L3 private functions and private variables
        (list 'l3-private-function-font-lock-search
@@ -508,6 +505,9 @@ initialisation file"
        (list 'l2-private-font-lock-search
 	     1 'latex2-private-function)
 
+       ;; L2 public functions (no @ symbol)
+       (list 'l2-public-font-lock-search
+	     1 'latex2-function)
        ; L3 function argument specifier (for both kernel and non-kernel)
        ; older versions of emacs need this
        ;; The 2 arg-spec doesn't work with older versions of emacs,
