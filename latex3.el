@@ -103,6 +103,13 @@
     (latex3-auctex-customisations)
   (latex3-tex-mode-customisations))
 
+;; copied and renamed from org-compat.el:
+(defalias 'latex-font-lock-ensure
+  (if (fboundp 'font-lock-ensure)
+      #'font-lock-ensure
+    (lambda (&optional _beg _end)
+      (with-no-warnings (font-lock-fontify-buffer)))))
+
 ;; Create new faces
 (defface font-latex-expl3-kernel-face
   '((t :inherit font-lock-keyword-face))
@@ -227,6 +234,15 @@ initialisation file"
   :tag "Warning-coloured Argument Specifiers"
   :group 'LaTeX3
   :set 'set-argspec-warn
+  )
+
+;; To prevent errors in the jit font locker, this method is used instead of
+;; 'backward-char'
+(defun backward-char-no-error ()
+  "Call 'backward-char' and suppress errors, the most likely cause of
+which is the point being at point-min."
+  (condition-case nil (backward-char)
+    (error nil))
   )
 
 
@@ -360,7 +376,7 @@ initialisation file"
       "\\(?:" re-string-end-macro "\\|$"  "\\)"
       )
      search-limit t)
-    (backward-char)
+    (backward-char-no-error)
     )
   )
 (defun l2-private-font-lock-search (search-limit)
@@ -372,7 +388,7 @@ initialisation file"
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
-    (backward-char)
+    (backward-char-no-error)
     )
   )
 (defun l3-variable-font-lock-search (search-limit)
@@ -384,7 +400,7 @@ initialisation file"
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
-    (backward-char)
+    (backward-char-no-error)
     )
   )
 (defun l3-private-variable-font-lock-search (search-limit)
@@ -396,7 +412,7 @@ initialisation file"
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
-    (backward-char)
+    (backward-char-no-error)
     )
   )
 (defun l3-function-font-lock-search (search-limit)
@@ -409,7 +425,7 @@ initialisation file"
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
-    (backward-char)
+    (backward-char-no-error)
     )
   )
 (defun l3-private-function-font-lock-search (search-limit)
@@ -422,7 +438,7 @@ initialisation file"
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
-    (backward-char)
+    (backward-char-no-error)
     )
   )
 
@@ -439,7 +455,7 @@ initialisation file"
       "\\(?:" re-string-end-macro "\\|$" "\\)"
       )
      search-limit t)
-    (backward-char)
+    (backward-char-no-error)
     )
   )
 
@@ -459,8 +475,116 @@ initialisation file"
         "}" ; the closing brace
         )
        search-limit t)
-    (backward-char)
+    (backward-char-no-error)
     )
+  )
+
+(defun latex-doc-fontify-l2sty-and-l3 (limit)
+  (condition-case nil
+      (latex-doc-fontify-l2sty-and-l3-aux limit)
+    (error (message "L2 Doc fontification error in %S at line %d"
+		    (current-buffer)
+		    (line-number-at-pos))))
+  )
+
+(defun latex-doc-fontify-l2sty-and-l3-aux (limit)
+  "Fontify the text between makeatletter and makeatother, and
+between ExplSyntaxOn and ExplSyntaxOff."
+  (let ((case-fold-search nil))
+    (when (re-search-forward
+           "^\\(\\\\\\(ExplSyntaxOn\\|makeatletter\\)\\)$"
+	   limit t)
+      (let ((beg (match-beginning 0))
+	    (end-of-beginline (match-end 0))
+	    (block-start (match-end 0))  ; includes the \n at end of line
+	    (block-end nil)              ; will include \n after end of block content
+	    (l3-block-type (match-string 2))
+            (l3-block-type-end)
+            (l3-wrong-block-type-end)
+            (expl3))
+        (cond
+         ((string= l3-block-type "ExplSyntaxOn")
+          (setq l3-block-type-end "ExplSyntaxOff")
+          (setq expl3 "l3"))
+         ((string= l3-block-type "makeatletter")
+          (setq l3-block-type-end "makeatother")
+          (setq expl3 "l2"))
+          )
+	(when (re-search-forward
+               (concat "^\\\\" "\\(" l3-block-type-end "\\)" )
+	       nil t)  ;; on purpose, we look further than LIMIT
+	  ;; We do have a matching end line
+	  (setq beg-of-endline (match-beginning 0)
+		end-of-endline (match-end 0)
+		nl-before-endline (1- (match-beginning 0)))
+	  (setq block-end (match-beginning 0)) ; includes the final newline.
+	  (add-text-properties
+	   beg end-of-endline '(font-lock-fontified t font-lock-multiline t))
+	  (latex-doc-fontify-l2-l3-block block-start block-end expl3)
+	  t)
+        ))))
+
+(defun latex-doc-fontify-l2-l3-block (start end expl3)
+  "Fontify code block as L2 or L3.
+This function is called by emacs automatic fontification"
+  (let ((string (buffer-substring-no-properties start end))
+	(modified (buffer-modified-p))
+	(sty-buffer (current-buffer)))
+    (remove-text-properties start end '(face nil))
+    (with-current-buffer
+	(get-buffer-create
+	 (format " *l2-expl3-fontification:%s*" expl3));; l2 or l3
+      (let ((inhibit-modification-hooks nil))
+	(erase-buffer)
+	;; Add string and a final space to ensure property change.
+	(insert string " "))
+      (cond
+       ((string= expl3 "l3") (font-lock-add-keywords 'nil latex-sty-font-lock-keywords))
+       ((string= expl3 "l2") (font-lock-add-keywords 'nil makeatother-font-lock-keywords))
+       )
+      (latex-font-lock-ensure)
+      (let ((pos (point-min)) next)
+	(while (setq next (next-property-change pos))
+	  ;; Handle additional properties from font-lock, so as to
+	  ;; preserve, e.g., composition.
+	  (dolist (prop (cons 'face font-lock-extra-managed-props))
+	    (let ((new-prop (get-text-property pos prop)))
+	      (put-text-property
+	       (+ start (1- pos)) (1- (+ start next)) prop new-prop
+	       sty-buffer)))
+	  (setq pos next))
+        )
+      (cond
+       ((string= expl3 "l3") (font-lock-remove-keywords 'nil latex-sty-font-lock-keywords))
+       ((string= expl3 "l2") (font-lock-remove-keywords 'nil makeatother-font-lock-keywords))
+       )
+      )
+    
+    (add-text-properties
+     start end
+     '(font-lock-fontified t fontified t font-lock-multiline t))
+    (set-buffer-modified-p modified)))
+
+(defconst makeatother-font-lock-keywords
+  (eval-when-compile
+    (let*
+        (;; Commands relevant to data structures
+
+	 (numbered-args "\\(#+[1-9]\\)")
+	 )
+      (list
+       (list (concat"\\(" re-string-backslash re-string-builtin-commands "\\)") 1 'latex-builtin)
+       ;; L2 Private methods (letters and @)
+       (list 'l2-private-font-lock-search
+	     1 'latex2-private-function)
+
+       ;; L2 public functions (no @ symbol)
+       (list 'l2-public-font-lock-search
+	     1 'latex2-function)
+       )
+      )
+    )
+  "Extra keywords to highlight in LaTeX doc mode, between \\makeatletter and \\makeatother."
   )
 
 
@@ -573,18 +697,20 @@ initialisation file"
        (list numbered-args
 	     1 'latex-arg)
 
-       ;; TODO other things:
        ;;  strings (ordinary string face) - copied directly from tex-mode.el
        (cons (concat (regexp-opt '("``" "\"<" "\"`" "<<" "«") t)
 		      "[^'\">{]+"	;a bit pessimistic
 		      (regexp-opt '("''" "\">" "\"'" ">>" "»") t))
 	      'font-lock-string-face)
+       ;; TODO other things:
        ;;  titles  (new latex-doc-face)
        ;;  warnings (uses 'font-latex-warning-face)
+       ;;  bold/italic/tt/subscript/superscript/... (as per latex-mode)
+
        ;;  environments (uses 'font-latex-environment-name-face)
        (list 'latex-env-font-lock-search
              2 'latex-env)
-       ;;  bold/italic/tt/subscript/superscript/... (as per latex-mode)
+       '(latex-doc-fontify-l2sty-and-l3)
        )
       )
     )
