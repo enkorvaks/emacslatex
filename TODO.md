@@ -12,8 +12,3 @@ completed. In no particular order:
 The `test-emacs-highlight.sty` file needs more tests to ensure that
 the colours work properly, and don't bleed into things they shouldn't
 
-Investigate if highlighting can be applied between specific parts of
-the buffer, and if so, use appropriate highlighting between
-`\ExplSyntaxOn` and `\ExplSyntaxOff` (pretty much everything from
-Style Mode), and between `\makeatletter` and `\makeatother` (just the
-LaTeX2e private functions).
